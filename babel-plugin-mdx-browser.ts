@@ -1,26 +1,26 @@
+import type { NodePath } from '@babel/traverse'
+import type {
+  CallExpression,
+  ImportDeclaration,
+  VariableDeclaration,
+  V8IntrinsicIdentifier,
+} from '@babel/types'
 export default function BabelPluginMdxBrowser() {
   return {
     visitor: {
       // remove all imports, we will add these to scope manually
-      ImportDeclaration(path: any) {
+      ImportDeclaration(path: NodePath<ImportDeclaration>) {
         path.remove()
       },
       // the `makeShortcode` template is nice for error handling but we
       // don't need it here as we are manually injecting dependencies
-      VariableDeclaration(path: any) {
-        // this removes the `makeShortcode` function
-        if (path.node.declarations[0].id.name === 'makeShortcode') {
-          path.remove()
-        }
+      VariableDeclaration(path: NodePath<VariableDeclaration>) {
         // this removes any variable that is set using the `makeShortcode` function
-        if (
-          path.node &&
-          path.node.declarations &&
-          path.node.declarations[0] &&
-          path.node.declarations[0].init &&
-          path.node.declarations[0].init.callee &&
-          path.node.declarations[0].init.callee.name === 'makeShortcode'
-        ) {
+        const declaration = path?.node?.declarations[0]
+        const init = declaration?.init as CallExpression | null
+        const callee = init?.callee as V8IntrinsicIdentifier
+        const name = callee?.name
+        if (name === 'makeShortcode') {
           path.remove()
         }
       },
